@@ -169,6 +169,8 @@ def main():
     # Display reports for this assignment
     display_reports(config)
 
+    # writing an awsome new method for the report
+
     input("\nPress ENTER to exit...")
 if __name__ == '__main__':
     main()

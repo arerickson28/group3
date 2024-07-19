@@ -126,7 +126,7 @@ def display_remaining_vaccinatons_needed_for_each_customer(my_cursor):
         for customer in needed_customer_vacc_dict:
             print(f"--Customer with last name of {customer} still needs the following vaccinatons:")
             for vacc in needed_customer_vacc_dict[customer]:
-                print(f"the {vacc.upper()} vaccinaton\n")
+                print(f"the {vacc.upper()} vaccination\n")
 
     # Use the display function to display report
     display_needed_customer_vaccs(needed_customer_vacc_dict)

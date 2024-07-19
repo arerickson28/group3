@@ -177,6 +177,7 @@ def excursion_summary_report(my_cursor):
         my_cursor.execute(query)
         return my_cursor.fetchall()
 
+    # Big query to gather all relevent data for an excursion
     excursion_summary_query = """
     select excursions.id, trip_type.tripName, excursions.excursionDate, excursions.visaRequired, excursions.aireFarePerPerson, equipment.equipmentName, vaccinations.vaccinationName, customers.lastName
     from excursions
@@ -187,14 +188,20 @@ def excursion_summary_report(my_cursor):
     left join required_trip_vaccinations on trip_type.id = required_trip_vaccinations.tripId
     left join vaccinations on vaccinations.id = required_trip_vaccinations.vaccinationId;"""
 
+    # Retrieve data from MySql using query
+    excursion_summary_data = get_query_result(excursion_summary_query)
+
+    # The first element in each returned tuple from the MySql query is the unique excursion id, lets collect those
     def get_unique_excursions(summary_data):
         excursion_ids = []
         for data in summary_data:
             excursion_ids.append(data[0])
 
+        # Get distinct excursion ids
         unique_excursion_ids = list(set(excursion_ids))
         return unique_excursion_ids
 
+    # Prepare a dictionary object so that we may map our MySql data into a more useful form
     def create_summary_dictionary(excursions):
         summary_dictionary = {}
         for excursion in excursions:
@@ -208,15 +215,15 @@ def excursion_summary_report(my_cursor):
                 "customers": []
             }
         return summary_dictionary
-    
-    excursion_summary_data = get_query_result(excursion_summary_query)
 
+    # Use this to transform the MySql booleans from zeros and ones to Trues and Falses
     def display_bool(myBool):
         if myBool == 0:
             return False
         else:
             return True
 
+    # Map the returned MySql data into a useful data object/dictionary
     def map_summary_data(summary_data):
         unique_excursions = get_unique_excursions(summary_data)
         summary_dictionary = create_summary_dictionary(unique_excursions)
@@ -248,6 +255,7 @@ def excursion_summary_report(my_cursor):
 
     excursion_summary_dictionary = map_summary_data(excursion_summary_data)
 
+    # Iterate through the summary dictionary to to display excursion data
     print("--DISPLAYING EXCURSION SUMMARIES--\n")
     for excursion in excursion_summary_dictionary:
         print("Trip: {}".format(excursion_summary_dictionary[excursion]["tripType"]))

@@ -117,14 +117,14 @@ def display_remaining_vaccinatons_needed_for_each_customer(my_cursor):
 
         return needed_customer_vacc_dict
     
-    # Final dictionary of customers and their corresponding list of needed vaccinatons that they don't have yet
+    # Final dictionary of customers and their corresponding list of needed vaccinations that they don't have yet
     needed_customer_vacc_dict = generate_needed_customer_vacc_dict(customer_vacc_dict, required_customer_vacc_dict)
 
-    # Function to display each customer and their remaining needed vaccinatons. This is the report.
+    # Function to display each customer and their remaining needed vaccinations. This is the report.
     def display_needed_customer_vaccs(needed_customer_vacc_dict):
         print("---DISPLAYING REMAINING NEEDED VACCINATONS TO FULFILL TRIP REQUIREMENTS---\n")
         for customer in needed_customer_vacc_dict:
-            print(f"--Customer with last name of {customer} still needs the following vaccinatons:")
+            print(f"--Customer with last name of {customer} still needs the following vaccinations:")
             for vacc in needed_customer_vacc_dict[customer]:
                 print(f"the {vacc.upper()} vaccination\n")
 

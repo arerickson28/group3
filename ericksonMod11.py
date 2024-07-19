@@ -1,5 +1,6 @@
 import mysql.connector
 from mysql.connector import errorcode
+from datetime import date
 
 def display_remaining_vaccinatons_needed_for_each_customer(my_cursor):
     def get_query_result(query):
@@ -136,6 +137,39 @@ def display_remaining_vaccinatons_needed_for_each_customer(my_cursor):
 # Consider: Changing the data to make the report more interesting?
 #----------
 
+# Report to track equipment age -- compare purchase date of each equipment unit to the present date
+# Use this report to identify potentially dangerous equipment to be disposed of and to inform purchasing decisions for new equipment
+def display_equipment_age_report(my_cursor):
+    def get_query_result(query):
+        my_cursor.execute(query)
+        return my_cursor.fetchall()
+    
+    def is_older_than_five(purchase_date, today_date):
+        days_difference = abs(today_date - purchase_date).days
+        if days_difference > 1825:
+            return True
+        else:
+            return False
+    
+    equipment_units_query = """
+    select equipment_units.id as UnitID, equipment.equipmentName, equipment_units.purchaseDate
+    from equipment_units
+    left join equipment on equipment_units.equipmentId = equipment.id;"""
+
+    equipment_units_data = get_query_result(equipment_units_query)
+
+    print("---DISPLAYING AGE OF EACH EQUPMENT INVENTORY UNIT---\n")
+    for data in equipment_units_data:
+        print(f"Unit ID: {data[0]}")
+        print(f"Type: {data[1]}")
+        print("Purchase Date: {}".format(data[2].strftime('%b. %Y')))
+        print(f"Is > 5 years old: {is_older_than_five(data[2], date.today())}\n\n")
+
+    # ----
+    # Note: None of our equipment units are older than 5 years. This makes the report less interesting
+    # ----
+
+
 def excursion_details(my_cursor):
     def get_query_result(query):
         my_cursor.execute(query)
@@ -189,6 +223,7 @@ def display_reports(config):
 
         # Display report regarding the remaining vaccinations customers need to go on their excurions
         display_remaining_vaccinatons_needed_for_each_customer(my_cursor)
+        display_equipment_age_report(my_cursor)
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:

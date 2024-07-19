@@ -117,16 +117,16 @@ def display_remaining_vaccinatons_needed_for_each_customer(my_cursor):
 
         return needed_customer_vacc_dict
     
-    # Final dictionary of customers and their corresponding list of needed vaccinatons that they don't have yet
+    # Final dictionary of customers and their corresponding list of needed vaccinations that they don't have yet
     needed_customer_vacc_dict = generate_needed_customer_vacc_dict(customer_vacc_dict, required_customer_vacc_dict)
 
-    # Function to display each customer and their remaining needed vaccinatons. This is the report.
+    # Function to display each customer and their remaining needed vaccinations. This is the report.
     def display_needed_customer_vaccs(needed_customer_vacc_dict):
         print("---DISPLAYING REMAINING NEEDED VACCINATONS TO FULFILL TRIP REQUIREMENTS---\n")
         for customer in needed_customer_vacc_dict:
             print(f"--Customer with last name of {customer} still needs the following vaccinations:")
             for vacc in needed_customer_vacc_dict[customer]:
-                print(f"the {vacc.upper()} vaccinaton\n")
+                print(f"the {vacc.upper()} vaccination\n")
 
     # Use the display function to display report
     display_needed_customer_vaccs(needed_customer_vacc_dict)
@@ -135,6 +135,49 @@ def display_remaining_vaccinatons_needed_for_each_customer(my_cursor):
 # Note: three out of five of the customers in the data are going to Fjords of Norway which doesn't require any vaccinations, this makes the report less interesting
 # Consider: Changing the data to make the report more interesting?
 #----------
+
+def excursion_details(my_cursor):
+    def get_query_result(query):
+        my_cursor.execute(query)
+        return my_cursor.fetchall()
+    
+    # Excursions Details Report
+    # data needed --> (Excursion name, customers attending, equipment needed, vaccinations required)
+    # Group data to display organized by Excursion
+
+    # Queries to collect data
+    # Excursion name and date
+    excursion_name_query = """
+    SELECT trip_type.trip_name, excursion.excursionDate
+    FROM excursions
+    LEFT JOIN trip_type ON trip_type.id = excursions.tripTypeId"""
+
+    # Customers attending by Last Name
+    customers_attending_query = """
+    SELECT trip_type.trip_name, customers.lastName
+    FROM excursions
+    LEFT JOIN customers ON excursions.id = customers.excursionId
+    LEFT JOIN trip_type ON trip_type.id = excursions.tripTypeId"""
+
+    # Equipment needed
+    equipment_needed_query = """
+    SELECT trip_type.trip_name, equipment.equipmentName
+    FROM equipment
+    LEFT JOIN equipment_trip ON equipment.id = equipment_trip.equipmentId
+    LEFT JOIN trip_type ON trip_type.id = equipment_trip.tripId"""
+
+    # Vaccinations required
+    vaccs_per_trip_query = """
+    SELECT trip_type.tripName, vaccinations.vaccinationName
+    FROM trip_type
+    LEFT JOIN required_trip_vaccinations ON trip_type.id = required_trip_vaccinations.tripId
+    LEFT JOIN vaccinations ON required_trip_vaccinations.vaccinationId = vaccinations.id"""
+
+    excursion_name_data = get_query_result(excursion_name_query)
+    customers_attending_data = get_query_result(customers_attending_query)
+    equipment_needed_data = get_query_result(equipment_needed_query)
+    vaccs_per_trip_data = get_query_result(vaccs_per_trip_query)
+    
 
 # Function to display all reports for this assignment
 def display_reports(config):
@@ -169,8 +212,7 @@ def main():
     # Display reports for this assignment
     display_reports(config)
 
-    # writing an awsome new method for the report
-
     input("\nPress ENTER to exit...")
+
 if __name__ == '__main__':
     main()

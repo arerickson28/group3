@@ -165,53 +165,113 @@ def display_equipment_age_report(my_cursor):
         print("Purchase Date: {}".format(data[2].strftime('%b. %Y')))
         print(f"Is > 5 years old: {is_older_than_five(data[2], date.today())}\n\n")
 
+
     # ----
     # Note: None of our equipment units are older than 5 years. This makes the report less interesting
     # ----
 
-
-def excursion_details(my_cursor):
+# Report to summarize the details for each planned excursion
+# Use this information to send a welcome message and trip summary to customer upon registration
+def excursion_summary_report(my_cursor):
     def get_query_result(query):
         my_cursor.execute(query)
         return my_cursor.fetchall()
-    
-    # Excursions Details Report
-    # data needed --> (Excursion name, customers attending, equipment needed, vaccinations required)
-    # Group data to display organized by Excursion
 
-    # Queries to collect data
-    # Excursion name and date
-    excursion_name_query = """
-    SELECT trip_type.trip_name, excursion.excursionDate
-    FROM excursions
-    LEFT JOIN trip_type ON trip_type.id = excursions.tripTypeId"""
+    # Big query to gather all relevent data for an excursion
+    excursion_summary_query = """
+    select excursions.id, trip_type.tripName, excursions.excursionDate, excursions.visaRequired, excursions.aireFarePerPerson, equipment.equipmentName, vaccinations.vaccinationName, customers.lastName
+    from excursions
+    left join trip_type on excursions.tripTypeId = trip_type.id
+    left join customers on excursions.id = customers.excursionId
+    left join equipment_trip on trip_type.id = equipment_trip.tripId
+    left join equipment on equipment.id = equipment_trip.equipmentId
+    left join required_trip_vaccinations on trip_type.id = required_trip_vaccinations.tripId
+    left join vaccinations on vaccinations.id = required_trip_vaccinations.vaccinationId;"""
 
-    # Customers attending by Last Name
-    customers_attending_query = """
-    SELECT trip_type.trip_name, customers.lastName
-    FROM excursions
-    LEFT JOIN customers ON excursions.id = customers.excursionId
-    LEFT JOIN trip_type ON trip_type.id = excursions.tripTypeId"""
+    # Retrieve data from MySql using query
+    excursion_summary_data = get_query_result(excursion_summary_query)
 
-    # Equipment needed
-    equipment_needed_query = """
-    SELECT trip_type.trip_name, equipment.equipmentName
-    FROM equipment
-    LEFT JOIN equipment_trip ON equipment.id = equipment_trip.equipmentId
-    LEFT JOIN trip_type ON trip_type.id = equipment_trip.tripId"""
+    # The first element in each returned tuple from the MySql query is the unique excursion id, lets collect those
+    def get_unique_excursions(summary_data):
+        excursion_ids = []
+        for data in summary_data:
+            excursion_ids.append(data[0])
 
-    # Vaccinations required
-    vaccs_per_trip_query = """
-    SELECT trip_type.tripName, vaccinations.vaccinationName
-    FROM trip_type
-    LEFT JOIN required_trip_vaccinations ON trip_type.id = required_trip_vaccinations.tripId
-    LEFT JOIN vaccinations ON required_trip_vaccinations.vaccinationId = vaccinations.id"""
+        # Get distinct excursion ids
+        unique_excursion_ids = list(set(excursion_ids))
+        return unique_excursion_ids
 
-    excursion_name_data = get_query_result(excursion_name_query)
-    customers_attending_data = get_query_result(customers_attending_query)
-    equipment_needed_data = get_query_result(equipment_needed_query)
-    vaccs_per_trip_data = get_query_result(vaccs_per_trip_query)
-    
+    # Prepare a dictionary object so that we may map our MySql data into a more useful form
+    def create_summary_dictionary(excursions):
+        summary_dictionary = {}
+        for excursion in excursions:
+            summary_dictionary[excursion] = {
+                "tripType": "",
+                "date": "",
+                "visaRequired": "",
+                "aireFarePerPerson": "",
+                "equipment": [],
+                "vaccinations": [],
+                "customers": []
+            }
+        return summary_dictionary
+
+    # Use this to transform the MySql booleans from zeros and ones to Trues and Falses
+    def display_bool(myBool):
+        if myBool == 0:
+            return False
+        else:
+            return True
+
+    # Map the returned MySql data into a useful data object/dictionary
+    def map_summary_data(summary_data):
+        unique_excursions = get_unique_excursions(summary_data)
+        summary_dictionary = create_summary_dictionary(unique_excursions)
+
+        # Map data into summary_dictionary
+        for data in summary_data:
+            if summary_dictionary[data[0]]["tripType"] == "":
+                summary_dictionary[data[0]]["tripType"] = data[1]
+
+            if summary_dictionary[data[0]]["date"] == "":
+                summary_dictionary[data[0]]["date"] = data[2].strftime("%b. %d %Y")
+       
+            if summary_dictionary[data[0]]["visaRequired"] == "":
+                summary_dictionary[data[0]]["visaRequired"] = display_bool(data[3])
+
+            if summary_dictionary[data[0]]["aireFarePerPerson"] == "":
+                summary_dictionary[data[0]]["aireFarePerPerson"] = str(data[4])
+
+            if data[5] not in summary_dictionary[data[0]]["equipment"] and data[5] != None:
+                summary_dictionary[data[0]]["equipment"].append(data[5])
+
+            if data[6] not in summary_dictionary[data[0]]["vaccinations"] and data[6] != None:
+                summary_dictionary[data[0]]["vaccinations"].append(data[6])
+
+            if data[7] not in summary_dictionary[data[0]]["customers"] and data[7] != None:
+                summary_dictionary[data[0]]["customers"].append(data[7])
+
+        return summary_dictionary
+
+    excursion_summary_dictionary = map_summary_data(excursion_summary_data)
+
+    # Iterate through the summary dictionary to to display excursion data
+    print("--DISPLAYING EXCURSION SUMMARIES--\n")
+    for excursion in excursion_summary_dictionary:
+        print("Trip: {}".format(excursion_summary_dictionary[excursion]["tripType"]))
+        print("Date: {}".format(excursion_summary_dictionary[excursion]["date"]))
+        print("Visa Required: {}".format(excursion_summary_dictionary[excursion]["visaRequired"]))
+        print("Aire Fare: ${}".format(excursion_summary_dictionary[excursion]["aireFarePerPerson"]))
+        print("-Equipment Required-")
+        for equipment in excursion_summary_dictionary[excursion]["equipment"]:
+            print(f"{equipment}")
+        print("-Vaccinatons Required-")
+        for vacc in excursion_summary_dictionary[excursion]["vaccinations"]:
+            print(f"{vacc}")
+        print("-Customers Participating-")
+        for customer in excursion_summary_dictionary[excursion]["customers"]:
+            print(f"{customer}")
+        print("\n\n")
 
 # Function to display all reports for this assignment
 def display_reports(config):
@@ -221,9 +281,9 @@ def display_reports(config):
         print("\nDatabase user {} connected to MySql on host {} with database {}\n\n\n".format(config["user"], config["host"], config["database"]))
         my_cursor = db.cursor()
 
-        # Display report regarding the remaining vaccinations customers need to go on their excurions
         display_remaining_vaccinatons_needed_for_each_customer(my_cursor)
         display_equipment_age_report(my_cursor)
+        excursion_summary_report(my_cursor)
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
